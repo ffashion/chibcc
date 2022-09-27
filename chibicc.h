@@ -26,7 +26,7 @@
 #endif
 
 typedef struct Type Type;
-typedef struct Node Node;
+typedef struct Node AstNode;
 typedef struct Member Member;
 typedef struct Relocation Relocation;
 typedef struct Hideset Hideset;
@@ -149,7 +149,7 @@ struct Obj {
   // Function
   bool is_inline;
   Obj *params;
-  Node *body;
+  AstNode *body;
   Obj *locals;
   Obj *va_area;
   Obj *alloca_bottom;
@@ -227,44 +227,44 @@ typedef enum {
 // AST node type
 struct Node {
   NodeKind kind; // Node kind
-  Node *next;    // Next node
+  AstNode *next;    // Next node
   Type *ty;      // Type, e.g. int or pointer to int
   Token *tok;    // Representative token
 
-  Node *lhs;     // Left-hand side
-  Node *rhs;     // Right-hand side
+  AstNode *lhs;     // Left-hand side
+  AstNode *rhs;     // Right-hand side
 
   // "if" or "for" statement
-  Node *cond;
-  Node *then;
-  Node *els;
-  Node *init;
-  Node *inc;
+  AstNode *cond;
+  AstNode *then;
+  AstNode *els;
+  AstNode *init;
+  AstNode *inc;
 
   // "break" and "continue" labels
   char *brk_label;
   char *cont_label;
 
   // Block or statement expression
-  Node *body;
+  AstNode *body;
 
   // Struct member access
   Member *member;
 
   // Function call
   Type *func_ty;
-  Node *args;
+  AstNode *args;
   bool pass_by_stack;
   Obj *ret_buffer;
 
   // Goto or labeled statement, or labels-as-values
   char *label;
   char *unique_label;
-  Node *goto_next;
+  AstNode *goto_next;
 
   // Switch
-  Node *case_next;
-  Node *default_case;
+  AstNode *case_next;
+  AstNode *default_case;
 
   // Case
   long begin;
@@ -274,13 +274,13 @@ struct Node {
   char *asm_str;
 
   // Atomic compare-and-swap
-  Node *cas_addr;
-  Node *cas_old;
-  Node *cas_new;
+  AstNode *cas_addr;
+  AstNode *cas_old;
+  AstNode *cas_new;
 
   // Atomic op= operators
   Obj *atomic_addr;
-  Node *atomic_expr;
+  AstNode *atomic_expr;
 
   // Variable
   Obj *var;
@@ -290,7 +290,7 @@ struct Node {
   long double fval;
 };
 
-Node *new_cast(Node *expr, Type *ty);
+AstNode *new_cast(AstNode *expr, Type *ty);
 int64_t const_expr(Token **rest, Token *tok);
 Obj *parse(Token *tok);
 
@@ -343,7 +343,7 @@ struct Type {
   int array_len;
 
   // Variable-length array
-  Node *vla_len; // # of elements
+  AstNode *vla_len; // # of elements
   Obj *vla_size; // sizeof() value
 
   // Struct
@@ -399,10 +399,10 @@ Type *copy_type(Type *ty);
 Type *pointer_to(Type *base);
 Type *func_type(Type *return_ty);
 Type *array_of(Type *base, int size);
-Type *vla_of(Type *base, Node *expr);
+Type *vla_of(Type *base, AstNode *expr);
 Type *enum_type(void);
 Type *struct_type(void);
-void add_type(Node *node);
+void add_type(AstNode *node);
 
 //
 // codegen.c

@@ -116,7 +116,7 @@ Type *array_of(Type *base, int len) {
   return ty;
 }
 
-Type *vla_of(Type *base, Node *len) {
+Type *vla_of(Type *base, AstNode *len) {
   Type *ty = new_type(TY_VLA, 8, 8);
   ty->base = base;
   ty->vla_len = len;
@@ -167,13 +167,13 @@ static Type *get_common_type(Type *ty1, Type *ty2) {
 // be promoted to match with the other.
 //
 // This operation is called the "usual arithmetic conversion".
-static void usual_arith_conv(Node **lhs, Node **rhs) {
+static void usual_arith_conv(AstNode **lhs, AstNode **rhs) {
   Type *ty = get_common_type((*lhs)->ty, (*rhs)->ty);
   *lhs = new_cast(*lhs, ty);
   *rhs = new_cast(*rhs, ty);
 }
 
-void add_type(Node *node) {
+void add_type(AstNode *node) {
   if (!node || node->ty)
     return;
 
@@ -185,9 +185,9 @@ void add_type(Node *node) {
   add_type(node->init);
   add_type(node->inc);
 
-  for (Node *n = node->body; n; n = n->next)
+  for (AstNode *n = node->body; n; n = n->next)
     add_type(n);
-  for (Node *n = node->args; n; n = n->next)
+  for (AstNode *n = node->args; n; n = n->next)
     add_type(n);
 
   switch (node->kind) {
@@ -274,7 +274,7 @@ void add_type(Node *node) {
     return;
   case ND_STMT_EXPR:
     if (node->body) {
-      Node *stmt = node->body;
+      AstNode *stmt = node->body;
       while (stmt->next)
         stmt = stmt->next;
       if (stmt->kind == ND_EXPR_STMT) {

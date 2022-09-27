@@ -11,8 +11,8 @@ static char *argreg32[] = {"%edi", "%esi", "%edx", "%ecx", "%r8d", "%r9d"};
 static char *argreg64[] = {"%rdi", "%rsi", "%rdx", "%rcx", "%r8", "%r9"};
 static Obj *current_fn;
 
-static void gen_expr(Node *node);
-static void gen_stmt(Node *node);
+static void gen_expr(AstNode *node);
+static void gen_stmt(AstNode *node);
 
 __attribute__((format(printf, 1, 2)))
 static void println(char *fmt, ...) {
@@ -78,7 +78,7 @@ static char *reg_ax(int sz) {
 
 // Compute the absolute address of a given node.
 // It's an error if a given node does not reside in memory.
-static void gen_addr(Node *node) {
+static void gen_addr(AstNode *node) {
   switch (node->kind) {
   case ND_VAR:
     // Variable-length array, which is always local.
@@ -453,7 +453,7 @@ static void push_struct(Type *ty) {
   }
 }
 
-static void push_args2(Node *args, bool first_pass) {
+static void push_args2(AstNode *args, bool first_pass) {
   if (!args)
     return;
   push_args2(args->next, first_pass);
@@ -501,7 +501,7 @@ static void push_args2(Node *args, bool first_pass) {
 //
 // - If a function is variadic, set the number of floating-point type
 //   arguments to RAX.
-static int push_args(Node *node) {
+static int push_args(AstNode *node) {
   int stack = 0, gp = 0, fp = 0;
 
   // If the return type is a large struct/union, the caller passes
@@ -510,7 +510,7 @@ static int push_args(Node *node) {
     gp++;
 
   // Load as many arguments to the registers as possible.
-  for (Node *arg = node->args; arg; arg = arg->next) {
+  for (AstNode *arg = node->args; arg; arg = arg->next) {
     Type *ty = arg->ty;
 
     switch (ty->kind) {
@@ -689,7 +689,7 @@ static void builtin_alloca(void) {
 }
 
 // Generate code for a given node.
-static void gen_expr(Node *node) {
+static void gen_expr(AstNode *node) {
   println("  .loc %d %d", node->tok->file->file_no, node->tok->line_no);
 
   switch (node->kind) {
@@ -803,7 +803,7 @@ static void gen_expr(Node *node) {
     store(node->ty);
     return;
   case ND_STMT_EXPR:
-    for (Node *n = node->body; n; n = n->next)
+    for (AstNode *n = node->body; n; n = n->next)
       gen_stmt(n);
     return;
   case ND_COMMA:
@@ -891,7 +891,7 @@ static void gen_expr(Node *node) {
     if (node->ret_buffer && node->ty->size > 16)
       pop(argreg64[gp++]);
 
-    for (Node *arg = node->args; arg; arg = arg->next) {
+    for (AstNode *arg = node->args; arg; arg = arg->next) {
       Type *ty = arg->ty;
 
       switch (ty->kind) {
@@ -1185,7 +1185,7 @@ static void gen_expr(Node *node) {
   error_tok(node->tok, "invalid expression");
 }
 
-static void gen_stmt(Node *node) {
+static void gen_stmt(AstNode *node) {
   println("  .loc %d %d", node->tok->file->file_no, node->tok->line_no);
 
   switch (node->kind) {
@@ -1234,7 +1234,7 @@ static void gen_stmt(Node *node) {
   case ND_SWITCH:
     gen_expr(node->cond);
 
-    for (Node *n = node->case_next; n; n = n->case_next) {
+    for (AstNode *n = node->case_next; n; n = n->case_next) {
       char *ax = (node->cond->ty->size == 8) ? "%rax" : "%eax";
       char *di = (node->cond->ty->size == 8) ? "%rdi" : "%edi";
 
@@ -1263,7 +1263,7 @@ static void gen_stmt(Node *node) {
     gen_stmt(node->lhs);
     return;
   case ND_BLOCK:
-    for (Node *n = node->body; n; n = n->next)
+    for (AstNode *n = node->body; n; n = n->next)
       gen_stmt(n);
     return;
   case ND_GOTO:

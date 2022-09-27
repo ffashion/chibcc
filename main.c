@@ -535,6 +535,9 @@ static void cc1(void) {
   // Tokenize and parse.
   Token *tok2 = must_tokenize_file(base_file);
   tok = append_tokens(tok, tok2);
+  // need traverse three times ...
+    // 1. transfer string to number 
+    // 2. set the exactly token type in tk->kind...
   tok = preprocess(tok);
 
   // If -M or -MD are given, print file dependencies.
@@ -567,7 +570,7 @@ static void cc1(void) {
   fclose(out);
 }
 
-static void assemble(char *input, char *output) {
+static void run_assemble(char *input, char *output) {
   char *cmd[] = {"as", "-c", input, "-o", output, NULL};
   run_subprocess(cmd);
 }
@@ -704,6 +707,7 @@ int main(int argc, char **argv) {
 
   if (opt_cc1) {
     add_default_include_paths(argv[0]);
+    //the core parser
     cc1();
     return 0;
   }
@@ -750,7 +754,7 @@ int main(int argc, char **argv) {
     // Handle .s
     if (type == FILE_ASM) {
       if (!opt_S)
-        assemble(input, output);
+        run_assemble(input, output);
       continue;
     }
 
@@ -772,15 +776,20 @@ int main(int argc, char **argv) {
     if (opt_c) {
       char *tmp = create_tmpfile();
       run_cc1(argc, argv, input, tmp);
-      assemble(tmp, output);
+      run_assemble(tmp, output);
       continue;
     }
 
     // Compile, assemble and link
     char *tmp1 = create_tmpfile();
     char *tmp2 = create_tmpfile();
+
+    //call ourself and gen asm file, example /tmp/chibicc-fCZ7MG
     run_cc1(argc, argv, input, tmp1);
-    assemble(tmp1, tmp2);
+
+    //call as to do assemble file
+    run_assemble(tmp1, tmp2);
+
     strarray_push(&ld_args, tmp2);
     continue;
   }

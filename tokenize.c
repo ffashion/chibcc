@@ -621,7 +621,7 @@ Token *tokenize(File *file) {
     }
 
     // Punctuators
-    int punct_len = read_punct(p);
+    int punct_len = read_punct(p); //{}, (), "",
     if (punct_len) {
       cur = cur->next = new_token(TK_PUNCT, p, p + punct_len);
       p += cur->len;

@@ -15,7 +15,7 @@ $(OBJS): chibicc.h
 
 test/%.exe: chibicc test/%.c
 	./chibicc -Iinclude -Itest -c -o test/$*.o test/$*.c
-	$(CC) -pthread -o $@ test/$*.o -xc test/common
+	$(CC) ${CFLAGS} -pthread -o $@ test/$*.o -xc test/common
 
 test: $(TESTS)
 	for i in $^; do echo $$i; ./$$i || exit 1; echo; done
