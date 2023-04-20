@@ -73,13 +73,6 @@ static Token *skip(Token *tok, char *s) {
   return tok->next;
 }
 
-// Ensure that the current token is TK_NUM.
-static int get_number(Token *tok) {
-  if (tok->kind != TK_NUM)
-    error_tok(tok, "expected a number");
-  return tok->val;
-}
-
 // Create a new token.
 static Token *new_token(TokenKind kind, char *start, char *end) {
   Token *tok = calloc(1, sizeof(Token));
@@ -224,73 +217,44 @@ static Node *primary(Token **rest, Token *tok) {
   }
 
   error_tok(tok, "expected an expression");
+  return NULL;
 }
 
-//
-// Code generator
-//
+int compute(Node *node) {
 
-static int depth;
+    if (node->kind == ND_ADD) {
+        return compute(node->lhs) + compute(node->rhs);
+    }
 
-static void push(void) {
-  printf("  push %%rax\n");
-  depth++;
-}
+    if (node->kind == ND_SUB) {
+        return compute(node->lhs) - compute(node->rhs);
+    }
 
-static void pop(char *arg) {
-  printf("  pop %s\n", arg);
-  depth--;
-}
+    if (node->kind == ND_MUL) {
+        return compute(node->lhs) * compute(node->rhs);
+    }
 
-static void gen_expr(Node *node) {
-  if (node->kind == ND_NUM) {
-    printf("  mov $%d, %%rax\n", node->val);
-    return;
-  }
+    if (node->kind == ND_DIV) {
+        return compute(node->lhs) / compute(node->rhs);
+    }
 
-  gen_expr(node->rhs);
-  push();
-  gen_expr(node->lhs);
-  pop("%rdi");
+    if (node->kind == ND_NUM) {
+        return node->val;
+    }
 
-  switch (node->kind) {
-  case ND_ADD:
-    printf("  add %%rdi, %%rax\n");
-    return;
-  case ND_SUB:
-    printf("  sub %%rdi, %%rax\n");
-    return;
-  case ND_MUL:
-    printf("  imul %%rdi, %%rax\n");
-    return;
-  case ND_DIV:
-    printf("  cqo\n");
-    printf("  idiv %%rdi\n");
-    return;
-  }
-
-  error("invalid expression");
+    return 0;
 }
 
 int main(int argc, char **argv) {
-  if (argc != 2)
-    error("%s: invalid number of arguments", argv[0]);
+    if (argc != 2)
+        error("%s: invalid number of arguments", argv[0]);
 
-  // Tokenize and parse.
-  current_input = argv[1];
-  Token *tok = tokenize();
-  Node *node = expr(&tok, tok);
+    // Tokenize and parse.
+    current_input = argv[1];
+    Token *tok = tokenize();
+    Node *node = expr(&tok, tok);
 
-  if (tok->kind != TK_EOF)
-    error_tok(tok, "extra token");
+    printf("%d", compute(node));
 
-  printf("  .globl main\n");
-  printf("main:\n");
-
-  // Traverse the AST to emit assembly.
-  gen_expr(node);
-  printf("  ret\n");
-
-  assert(depth == 0);
-  return 0;
+    return 0;
 }
